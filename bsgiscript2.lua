@@ -864,9 +864,12 @@ CircusMinigame:AddToggle("AutoPlayMinigame", {
         getgenv().Functions.AutoPlayMinigame = Value;
         task.spawn(function()
             while Functions.AutoPlayMinigame do
+                -- Get current difficulty
+                local difficulty = Options.MinigameDifficulty.Value or "Easy";
+                
                 -- Start the minigame
-                RemoteEvent:FireServer("StartMinigame", "Circus Pet Match", MinigameDifficulty.Value);
-                print("✓ Started minigame");
+                RemoteEvent:FireServer("StartMinigame", "Circus Pet Match", difficulty);
+                print("✓ Started minigame:", difficulty);
                 
                 -- Wait 8 seconds before finishing
                 task.wait(8);
@@ -878,7 +881,8 @@ CircusMinigame:AddToggle("AutoPlayMinigame", {
                 end);
                 
                 -- Wait the delay before next game
-                task.wait(MinigameDelay.Value);
+                local delay = Options.MinigameDelay.Value or 35;
+                task.wait(delay);
             end;
         end);
     end;
