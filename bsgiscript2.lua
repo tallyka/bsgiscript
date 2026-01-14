@@ -714,71 +714,123 @@ PickupSettingsBox:AddLabel("but may cause lag/stuttering");
 -- ============================================
 local FishingBox = Tabs.Fishing:AddLeftGroupbox("Auto Fishing");
 
-local RodID = FishingBox:AddInput("RodID", {
-    Default = "";
-    Numeric = false;
-    Text = "Your Rod ID";
-    Placeholder = "Use Remote Spy to find";
-    Callback = function(Value) return; end;
-});
+FishingBox:AddLabel("Click-based auto fishing!");
+FishingBox:AddDivider();
 
-local CastPower = FishingBox:AddSlider("CastPower", {
-    Text = "Cast Power %";
-    Default = 100;
-    Min = 50;
-    Max = 100;
+local CastHoldTime = FishingBox:AddSlider("CastHoldTime", {
+    Text = "Cast Hold Time";
+    Default = 1.5;
+    Min = 0.5;
+    Max = 3;
     Rounding = 1;
     Callback = function(Value) return; end;
+    Tooltip = "How long to hold before releasing cast";
 });
 
-local WaitTime = FishingBox:AddSlider("WaitTime", {
-    Text = "Wait Time (seconds)";
+local WaitForBite = FishingBox:AddSlider("WaitForBite", {
+    Text = "Wait For Bite";
     Default = 3;
     Min = 1;
     Max = 10;
     Rounding = 1;
     Callback = function(Value) return; end;
+    Tooltip = "How long to wait for fish to bite";
+});
+
+local BarrierBreaks = FishingBox:AddSlider("BarrierBreaks", {
+    Text = "Barrier Break Clicks";
+    Default = 20;
+    Min = 10;
+    Max = 50;
+    Rounding = 1;
+    Callback = function(Value) return; end;
+    Tooltip = "Number of clicks to break barriers";
 });
 
 FishingBox:AddToggle("AutoFish", {
-    Text = "Auto Fish";
+    Text = "🎣 Auto Fish";
     Default = false;
     Callback = function(Value)
         getgenv().Functions.AutoFish = Value;
         task.spawn(function()
+            local VIM = game:GetService("VirtualInputManager");
+            
             while Functions.AutoFish do
                 pcall(function()
-                    -- Equip rod
+                    -- Step 1: Equip rod
                     RemoteEvent:FireServer("EquipRod");
                     task.wait(0.5);
                     
-                    -- Begin cast
-                    RemoteEvent:FireServer("BeginCastCharge");
+                    -- Step 2: Click to start cast
+                    VIM:SendMouseButtonEvent(0, 0, 0, true, game, 0);
+                    print("🎣 Started cast...");
+                    
+                    -- Step 3: Hold for power
+                    local holdTime = Options.CastHoldTime.Value or 1.5;
+                    task.wait(holdTime);
+                    
+                    -- Step 4: Release to finish cast
+                    VIM:SendMouseButtonEvent(0, 0, 0, false, game, 0);
+                    print("✓ Released cast");
+                    
+                    -- Step 5: Wait for fish to bite
+                    local waitTime = Options.WaitForBite.Value or 3;
+                    task.wait(waitTime);
+                    
+                    print("🎣 Reeling with simultaneous hold and clicks...");
+                    
+                    -- Step 6: Create two separate tasks running at same time
+                    local reeling = true;
+                    
+                    -- Task 1: HOLD mouse button continuously
+                    task.spawn(function()
+                        while reeling do
+                            VIM:SendMouseButtonEvent(0, 0, 0, true, game, 0);
+                            task.wait(0.05); -- Keep refreshing the hold
+                        end;
+                        VIM:SendMouseButtonEvent(0, 0, 0, false, game, 0);
+                    end);
+                    
+                    -- Task 2: CLICK rapidly to break barriers
+                    task.spawn(function()
+                        local breaks = Options.BarrierBreaks.Value or 20;
+                        for i = 1, breaks do
+                            -- Send a separate click event
+                            VIM:SendMouseButtonEvent(0, 0, 0, true, game, 0);
+                            VIM:SendMouseButtonEvent(0, 0, 0, false, game, 0);
+                            task.wait(0.2);
+                            print("💥 Break " .. i);
+                        end;
+                    end);
+                    
+                    -- Step 7: Wait for reel to complete (10 seconds)
+                    task.wait(10);
+                    
+                    -- Step 8: Stop holding
+                    reeling = false;
                     task.wait(0.1);
                     
-                    -- Finish cast with luck (FIXED: use numbers not vectors)
-                    local rodId = RodID.Value ~= "" and RodID.Value or "d748a927-34e3-4f5f-a17d-e8ce22904317";
-                    RemoteEvent:FireServer("FinishCastCharge", 
-                        rodId,
-                        CastPower.Value,
-                        math.random(100, 200) / 100, -- Luck 1.0-2.0x
-                        0, 0, 0, 0  -- Position/rotation (all zeros)
-                    );
+                    print("✓ Caught fish!");
                     
-                    -- Wait for bite
-                    task.wait(WaitTime.Value);
-                    
-                    -- Reel in
-                    RemoteEvent:FireServer("Reel", true);
-                    
-                    -- Wait for reel animation
+                    -- Wait before next cast
                     task.wait(2);
                 end);
-                task.wait(1);
+                task.wait(0.5);
             end;
         end);
     end;
+    Tooltip = "Holds + clicks at the same time";
 });
+
+FishingBox:AddDivider();
+FishingBox:AddLabel("How it works:");
+FishingBox:AddLabel("1. Click to start cast");
+FishingBox:AddLabel("2. Hold for power");
+FishingBox:AddLabel("3. Release to cast");
+FishingBox:AddLabel("4. Wait for bite");
+FishingBox:AddLabel("5. Hold to reel");
+FishingBox:AddLabel("6. Click to break barriers");
+FishingBox:AddLabel("7. Catch fish!");
 
 local FishingManual = Tabs.Fishing:AddRightGroupbox("Manual Controls");
 
