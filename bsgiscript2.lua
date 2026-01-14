@@ -864,13 +864,33 @@ CircusMinigame:AddToggle("AutoPlayMinigame", {
         getgenv().Functions.AutoPlayMinigame = Value;
         task.spawn(function()
             while Functions.AutoPlayMinigame do
+                -- Start the minigame
                 RemoteEvent:FireServer("StartMinigame", "Circus Pet Match", MinigameDifficulty.Value);
-                task.wait(MinigameDelay.Value);
-                task.wait(3); -- Wait 3 seconds before finishing
+                
+                -- Wait 2 seconds for game to open
+                task.wait(2);
+                
+                -- Check if minigame GUI opened
+                local minigameGui = game:GetService("Players").LocalPlayer.PlayerGui:FindFirstChild("PetMatchMinigame");
+                if minigameGui then
+                    print("✓ Minigame opened successfully");
+                else
+                    warn("⚠ Minigame didn't open, retrying...");
+                    task.wait(3);
+                    continue;
+                end;
+                
+                -- Wait 5 seconds before finishing (so game actually plays)
+                task.wait(5);
+                
+                -- Finish the minigame
                 pcall(function()
                     RemoteEvent:FireServer("FinishMinigame");
+                    print("✓ Finished minigame");
                 end);
-                task.wait(2);
+                
+                -- Wait the delay before next game
+                task.wait(MinigameDelay.Value);
             end;
         end);
     end;
