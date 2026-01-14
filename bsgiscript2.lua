@@ -850,9 +850,9 @@ local MinigameDifficulty = CircusMinigame:AddDropdown("MinigameDifficulty", {
 
 local MinigameDelay = CircusMinigame:AddSlider("MinigameDelay", {
     Text = "Delay Between Games";
-    Default = 35;
-    Min = 20;
-    Max = 120;
+    Default = 240;
+    Min = 60;
+    Max = 300;
     Rounding = 1;
     Callback = function(Value) return; end;
 });
@@ -881,7 +881,7 @@ CircusMinigame:AddToggle("AutoPlayMinigame", {
                 end);
                 
                 -- Wait the delay before next game
-                local delay = Options.MinigameDelay.Value or 35;
+                local delay = Options.MinigameDelay.Value or 240;
                 task.wait(delay);
             end;
         end);
