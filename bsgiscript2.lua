@@ -1685,26 +1685,6 @@ UISettings:AddButton({
     end;
 });
 
--- Set the library's toggle keybind to LeftControl
-Library.ToggleKeybind = Options.MenuKeybind;
-
--- Override the library's toggle function to preserve cursor
-local OriginalToggle = Library.Toggle;
-Library.Toggle = function(self)
-    OriginalToggle(self);
-    
-    -- Preserve cursor visibility after toggle
-    task.spawn(function()
-        task.wait(0.05);
-        UserInputService.MouseIconEnabled = true;
-        
-        -- Keep lightning cursor visible
-        if LightningCursor.Enabled and LightningGui then
-            LightningGui.Enabled = true;
-        end;
-    end);
-end;
-
 ThemeManager:SetLibrary(Library);
 SaveManager:SetLibrary(Library);
 SaveManager:IgnoreThemeSettings();
@@ -1713,6 +1693,18 @@ ThemeManager:SetFolder("Bubble Gum Complete");
 SaveManager:BuildConfigSection(Tabs.Settings);
 ThemeManager:ApplyToTab(Tabs.Settings);
 SaveManager:LoadAutoloadConfig();
+
+-- Set the library's toggle keybind to LeftControl (after library is fully set up)
+Library.ToggleKeybind = Options.MenuKeybind;
+
+-- Keep cursor always visible
+task.spawn(function()
+    while task.wait(0.1) do
+        if not Library.Unloaded then
+            UserInputService.MouseIconEnabled = true;
+        end;
+    end;
+end);
 
 Library:Notify({
     Title = "Script Loaded!";
