@@ -866,22 +866,10 @@ CircusMinigame:AddToggle("AutoPlayMinigame", {
             while Functions.AutoPlayMinigame do
                 -- Start the minigame
                 RemoteEvent:FireServer("StartMinigame", "Circus Pet Match", MinigameDifficulty.Value);
+                print("✓ Started minigame");
                 
-                -- Wait 2 seconds for game to open
-                task.wait(2);
-                
-                -- Check if minigame GUI opened
-                local minigameGui = game:GetService("Players").LocalPlayer.PlayerGui:FindFirstChild("PetMatchMinigame");
-                if minigameGui then
-                    print("✓ Minigame opened successfully");
-                else
-                    warn("⚠ Minigame didn't open, retrying...");
-                    task.wait(3);
-                    continue;
-                end;
-                
-                -- Wait 10 seconds before finishing (so game actually plays)
-                task.wait(10);
+                -- Wait 8 seconds before finishing
+                task.wait(8);
                 
                 -- Finish the minigame
                 pcall(function()
@@ -1671,16 +1659,32 @@ UISettings:AddButton({
     Text = "🗑️ Unload Script";
     Func = function()
         -- Stop all automation
-        for key, value in pairs(getgenv().Functions) do
-            getgenv().Functions[key] = false;
+        if getgenv().Functions then
+            for key, value in pairs(getgenv().Functions) do
+                getgenv().Functions[key] = false;
+            end;
         end;
-        PickupCollector.AutoCollect = false;
+        
+        -- Stop pickup collector
+        if getgenv().PickupCollector then
+            getgenv().PickupCollector.AutoCollect = false;
+        end;
+        
+        -- Stop all egg hatching
+        if AutoHatchingEggs then
+            for eggName, _ in pairs(AutoHatchingEggs) do
+                AutoHatchingEggs[eggName] = false;
+            end;
+        end;
         
         -- Remove lightning cursor
-        if LightningGui then
-            LightningGui:Destroy();
-        end;
+        pcall(function()
+            if LightningGui then
+                LightningGui:Destroy();
+            end;
+        end);
         
+        -- Unload library
         Library:Unload();
     end;
 });
