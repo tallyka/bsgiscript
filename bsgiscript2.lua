@@ -880,8 +880,8 @@ CircusMinigame:AddToggle("AutoPlayMinigame", {
                     continue;
                 end;
                 
-                -- Wait 5 seconds before finishing (so game actually plays)
-                task.wait(5);
+                -- Wait 10 seconds before finishing (so game actually plays)
+                task.wait(10);
                 
                 -- Finish the minigame
                 pcall(function()
@@ -1667,23 +1667,6 @@ UISettings:AddToggle("LightningCursor", {
     Tooltip = "Cool lightning effect around cursor";
 });
 
--- Custom keybind handler to preserve cursor
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    if input.KeyCode == Enum.KeyCode.LeftControl and not gameProcessed then
-        -- Toggle library visibility
-        Library:Toggle();
-        
-        -- Force cursor to stay visible
-        task.wait(0.1);
-        UserInputService.MouseIconEnabled = true;
-        
-        -- Restore custom cursor if enabled
-        if Library.ShowCustomCursor then
-            Library.Cursor:Show();
-        end;
-    end;
-end);
-
 UISettings:AddButton({
     Text = "🗑️ Unload Script";
     Func = function()
@@ -1691,11 +1674,36 @@ UISettings:AddButton({
         for key, value in pairs(getgenv().Functions) do
             getgenv().Functions[key] = false;
         end;
+        PickupCollector.AutoCollect = false;
+        
+        -- Remove lightning cursor
+        if LightningGui then
+            LightningGui:Destroy();
+        end;
+        
         Library:Unload();
     end;
 });
 
+-- Set the library's toggle keybind to LeftControl
 Library.ToggleKeybind = Options.MenuKeybind;
+
+-- Override the library's toggle function to preserve cursor
+local OriginalToggle = Library.Toggle;
+Library.Toggle = function(self)
+    OriginalToggle(self);
+    
+    -- Preserve cursor visibility after toggle
+    task.spawn(function()
+        task.wait(0.05);
+        UserInputService.MouseIconEnabled = true;
+        
+        -- Keep lightning cursor visible
+        if LightningCursor.Enabled and LightningGui then
+            LightningGui.Enabled = true;
+        end;
+    end);
+end;
 
 ThemeManager:SetLibrary(Library);
 SaveManager:SetLibrary(Library);
