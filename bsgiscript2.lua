@@ -11,6 +11,10 @@ getgenv().Functions = {
     -- Fishing
     AutoFish = false;
     
+    -- Gum Shop
+    AutoBuyStorageGum = false;
+    AutoBuyBubbleGum = false;
+    
     -- Rewards & Claims
     AutoClaimPlaytimeRewards = false;
     AutoClaimSeasonRewards = false;
@@ -139,6 +143,7 @@ local Tabs = {
     Eggs = Window:AddTab("Eggs", "egg");
     Pickups = Window:AddTab("Pickup Collector", "diamond");
     Fishing = Window:AddTab("Fishing", "fish");
+    GumShop = Window:AddTab("Gum Shop", "shopping-cart");
     Circus = Window:AddTab("Circus Event", "tent");
     Potions = Window:AddTab("Potions", "flask-conical");
     Rifts = Window:AddTab("Rifts", "atom");
@@ -166,6 +171,16 @@ MainFunctions:AddToggle("AutoBlowBubbles", {
     end;
 });
 
+local SellDelay = MainFunctions:AddSlider("SellDelay", {
+    Text = "Sell Delay (seconds)";
+    Default = 0;
+    Min = 0;
+    Max = 120;
+    Rounding = 1;
+    Callback = function(Value) return; end;
+    Tooltip = "Wait time before each sell";
+});
+
 MainFunctions:AddToggle("AutoSell", {
     Text = "Auto Sell";
     Default = false;
@@ -173,7 +188,8 @@ MainFunctions:AddToggle("AutoSell", {
         getgenv().Functions.AutoSell = Value;
         task.spawn(function()
             while Functions.AutoSell do
-                task.wait();
+                local delay = Options.SellDelay.Value or 0;
+                task.wait(delay);
                 RemoteEvent:FireServer("SellBubble");
             end;
         end);
@@ -889,6 +905,264 @@ FishingTeleports:AddButton({
 });
 
 -- ============================================
+-- GUM SHOP TAB
+-- ============================================
+local StorageGumBox = Tabs.GumShop:AddLeftGroupbox("Storage Gum");
+
+-- All storage gums from the images
+local StorageGums = {
+    "Basic Gum",
+    "Stretchy Gum",
+    "VIP Gum",
+    "Chewy Gum",
+    "Epic Gum",
+    "Ultra Gum",
+    "Omega Gum",
+    "Infinity Gum",
+    "Unreal Gum",
+    "Cosmic Gum",
+    "XL Gum",
+    "Mega Gum",
+    "Quantum Gum",
+    "Alien Gum",
+    "Radioactive Gum",
+    "Experiment #52",
+    "Void Gum",
+    "Robogum",
+    "Retro Gum",
+};
+
+StorageGumBox:AddButton({
+    Text = "Buy All Storage Gum (Once)";
+    Func = function()
+        task.spawn(function()
+            for _, gumName in ipairs(StorageGums) do
+                pcall(function()
+                    RemoteEvent:FireServer("GumShopPurchase", gumName);
+                    print("✓ Bought:", gumName);
+                    task.wait(0.3);
+                end);
+            end;
+            Library:Notify({
+                Title = "Storage Gum Purchase Complete";
+                Description = "Attempted to buy all storage gums";
+                Time = 3;
+            });
+        end);
+    end;
+    Tooltip = "Buys all storage gums one time";
+});
+
+StorageGumBox:AddDivider();
+
+local AutoBuyStorageInterval = StorageGumBox:AddSlider("AutoBuyStorageInterval", {
+    Text = "Auto Buy Interval (seconds)";
+    Default = 60;
+    Min = 30;
+    Max = 300;
+    Rounding = 1;
+    Callback = function(Value) return; end;
+});
+
+StorageGumBox:AddToggle("AutoBuyStorageGum", {
+    Text = "Auto Buy Storage Gum";
+    Default = false;
+    Callback = function(Value)
+        getgenv().Functions.AutoBuyStorageGum = Value;
+        if Value then
+            print("🛒 [AUTO-BUY STORAGE] ENABLED - Starting loop...");
+            task.spawn(function()
+                while getgenv().Functions.AutoBuyStorageGum do
+                    print("🔄 [AUTO-BUY STORAGE] Starting purchase cycle...");
+                    for i, gumName in ipairs(StorageGums) do
+                        if not getgenv().Functions.AutoBuyStorageGum then 
+                            print("⏹️ [AUTO-BUY STORAGE] Stopped");
+                            break; 
+                        end;
+                        
+                        local success, err = pcall(function()
+                            RemoteEvent:FireServer("GumShopPurchase", gumName);
+                        end);
+                        
+                        if success then
+                            print(string.format("✓ [%d/%d] Bought: %s", i, #StorageGums, gumName));
+                        else
+                            print(string.format("✗ [%d/%d] Failed: %s (Error: %s)", i, #StorageGums, gumName, tostring(err)));
+                        end;
+                        
+                        task.wait(0.5);
+                    end;
+                    local interval = Options.AutoBuyStorageInterval.Value or 60;
+                    print("⏱️ [AUTO-BUY STORAGE] Cycle complete. Waiting", interval, "seconds...");
+                    task.wait(interval);
+                end;
+                print("⏹️ [AUTO-BUY STORAGE] Loop ended");
+            end);
+        else
+            print("⏹️ [AUTO-BUY STORAGE] DISABLED");
+        end;
+    end;
+    Tooltip = "Continuously buys storage gums";
+});
+
+local BubbleGumBox = Tabs.GumShop:AddRightGroupbox("Bubble Gum Flavors");
+
+-- All bubble gum flavors from the images
+local BubbleGumFlavors = {
+    "Bubble Gum",
+    "Blueberry",
+    "VIP Flavor",
+    "Cherry",
+    "Pizza",
+    "Watermelon",
+    "Chocolate",
+    "Contrast",
+    "Gold",
+    "Lemon",
+    "Donut",
+    "Swirl",
+    "Molten",
+    "Abstract",
+    "Classic",
+};
+
+BubbleGumBox:AddButton({
+    Text = "Buy All Bubble Gum (Once)";
+    Func = function()
+        task.spawn(function()
+            for _, gumName in ipairs(BubbleGumFlavors) do
+                pcall(function()
+                    RemoteEvent:FireServer("GumShopPurchase", gumName);
+                    print("✓ Bought:", gumName);
+                    task.wait(0.3);
+                end);
+            end;
+            Library:Notify({
+                Title = "Bubble Gum Purchase Complete";
+                Description = "Attempted to buy all bubble gums";
+                Time = 3;
+            });
+        end);
+    end;
+    Tooltip = "Buys all bubble gum flavors one time";
+});
+
+BubbleGumBox:AddDivider();
+
+local AutoBuyBubbleInterval = BubbleGumBox:AddSlider("AutoBuyBubbleInterval", {
+    Text = "Auto Buy Interval (seconds)";
+    Default = 60;
+    Min = 30;
+    Max = 300;
+    Rounding = 1;
+    Callback = function(Value) return; end;
+});
+
+BubbleGumBox:AddToggle("AutoBuyBubbleGum", {
+    Text = "Auto Buy Bubble Gum";
+    Default = false;
+    Callback = function(Value)
+        getgenv().Functions.AutoBuyBubbleGum = Value;
+        if Value then
+            print("🛒 [AUTO-BUY BUBBLE] ENABLED - Starting loop...");
+            task.spawn(function()
+                while getgenv().Functions.AutoBuyBubbleGum do
+                    print("🔄 [AUTO-BUY BUBBLE] Starting purchase cycle...");
+                    for i, gumName in ipairs(BubbleGumFlavors) do
+                        if not getgenv().Functions.AutoBuyBubbleGum then 
+                            print("⏹️ [AUTO-BUY BUBBLE] Stopped");
+                            break; 
+                        end;
+                        
+                        local success, err = pcall(function()
+                            RemoteEvent:FireServer("GumShopPurchase", gumName);
+                        end);
+                        
+                        if success then
+                            print(string.format("✓ [%d/%d] Bought: %s", i, #BubbleGumFlavors, gumName));
+                        else
+                            print(string.format("✗ [%d/%d] Failed: %s (Error: %s)", i, #BubbleGumFlavors, gumName, tostring(err)));
+                        end;
+                        
+                        task.wait(0.5);
+                    end;
+                    local interval = Options.AutoBuyBubbleInterval.Value or 60;
+                    print("⏱️ [AUTO-BUY BUBBLE] Cycle complete. Waiting", interval, "seconds...");
+                    task.wait(interval);
+                end;
+                print("⏹️ [AUTO-BUY BUBBLE] Loop ended");
+            end);
+        else
+            print("⏹️ [AUTO-BUY BUBBLE] DISABLED");
+        end;
+    end;
+    Tooltip = "Continuously buys bubble gum flavors";
+});
+
+local GumShopInfo = Tabs.GumShop:AddLeftGroupbox("Information");
+
+GumShopInfo:AddLabel("Storage Gum:");
+GumShopInfo:AddLabel("• Increases bubble capacity");
+GumShopInfo:AddLabel("• Buy to hold more bubbles");
+GumShopInfo:AddDivider();
+GumShopInfo:AddLabel("Bubble Gum Flavors:");
+GumShopInfo:AddLabel("• Cosmetic bubble colors");
+GumShopInfo:AddLabel("• Buy for variety");
+GumShopInfo:AddDivider();
+GumShopInfo:AddLabel("Note: Script tries all items");
+GumShopInfo:AddLabel("Will skip if already owned");
+GumShopInfo:AddLabel("or not enough coins");
+
+local GumShopQuick = Tabs.GumShop:AddRightGroupbox("Quick Actions");
+
+GumShopQuick:AddButton({
+    Text = "🛒 Buy Everything Once";
+    Func = function()
+        task.spawn(function()
+            -- Buy all storage gum
+            for _, gumName in ipairs(StorageGums) do
+                pcall(function()
+                    RemoteEvent:FireServer("GumShopPurchase", gumName);
+                    task.wait(0.3);
+                end);
+            end;
+            
+            -- Buy all bubble gum
+            for _, gumName in ipairs(BubbleGumFlavors) do
+                pcall(function()
+                    RemoteEvent:FireServer("GumShopPurchase", gumName);
+                    task.wait(0.3);
+                end);
+            end;
+            
+            Library:Notify({
+                Title = "Complete Purchase Done";
+                Description = "Bought all gums!";
+                Time = 3;
+            });
+        end);
+    end;
+    Tooltip = "Buys EVERYTHING in gum shop";
+    Risky = true;
+});
+
+GumShopQuick:AddButton({
+    Text = "Enable Auto Buy All";
+    Func = function()
+        Toggles.AutoBuyStorageGum:SetValue(true);
+        Toggles.AutoBuyBubbleGum:SetValue(true);
+    end;
+});
+
+GumShopQuick:AddButton({
+    Text = "Disable Auto Buy All";
+    Func = function()
+        Toggles.AutoBuyStorageGum:SetValue(false);
+        Toggles.AutoBuyBubbleGum:SetValue(false);
+    end;
+});
+
+-- ============================================
 -- CIRCUS TAB
 -- ============================================
 local CircusMinigame = Tabs.Circus:AddLeftGroupbox("Pet Match Minigame");
@@ -1395,7 +1669,17 @@ WorldTeleports:AddButton({
 WorldTeleports:AddButton({
     Text = "Zen";
     Func = function()
-        RemoteEvent:FireServer("Teleport", "Workspace.Worlds.The Overworld.Islands.Zen.Island.Portal.Spawn");
+        -- Try main path first
+        local success = pcall(function()
+            RemoteEvent:FireServer("Teleport", "Workspace.Worlds.The Overworld.Islands.Zen Island.Island.Portal.Spawn");
+        end);
+        
+        -- If that fails, try alternate path
+        if not success then
+            pcall(function()
+                RemoteEvent:FireServer("Teleport", "Workspace.Worlds.The Overworld.Islands.Zen.Island.Portal.Spawn");
+            end);
+        end;
     end;
 });
 
@@ -1442,9 +1726,21 @@ OtherTeleports:AddButton({
 OtherTeleports:AddButton({
     Text = "Coin Farm Area (Zen)";
     Func = function()
-        RemoteEvent:FireServer("Teleport", "Workspace.Worlds.The Overworld.Islands.Zen.Island.Portal.Spawn");
-        task.wait(0.3);
-        TweenTo(CFrame.new(4, 15973, 44), 0.8);
+        -- Try main path first
+        local success = pcall(function()
+            RemoteEvent:FireServer("Teleport", "Workspace.Worlds.The Overworld.Islands.Zen Island.Island.Portal.Spawn");
+            task.wait(0.3);
+            TweenTo(CFrame.new(4, 15973, 44), 0.8);
+        end);
+        
+        -- If that fails, try alternate path
+        if not success then
+            pcall(function()
+                RemoteEvent:FireServer("Teleport", "Workspace.Worlds.The Overworld.Islands.Zen.Island.Portal.Spawn");
+                task.wait(0.3);
+                TweenTo(CFrame.new(4, 15973, 44), 0.8);
+            end);
+        end;
     end;
 });
 
