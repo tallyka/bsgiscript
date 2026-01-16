@@ -256,6 +256,18 @@ QuickToggles:AddButton({
 
 local OtherFunctions = Tabs.Main:AddRightGroupbox("Other Functions");
 
+local ClaimInterval = OtherFunctions:AddSlider("ClaimInterval", {
+    Text = "Claim Interval (seconds)";
+    Default = 10;
+    Min = 5;
+    Max = 120;
+    Rounding = 1;
+    Callback = function(Value) return; end;
+    Tooltip = "How often to claim rewards";
+});
+
+OtherFunctions:AddDivider();
+
 OtherFunctions:AddToggle("AutoClaimPlaytimeRewards", {
     Text = "Auto Claim Playtime Rewards";
     Default = false;
@@ -267,7 +279,8 @@ OtherFunctions:AddToggle("AutoClaimPlaytimeRewards", {
                     task.wait();
                     RemoteFunction:InvokeServer("ClaimPlaytime", i);
                 end;
-                task.wait(60);
+                local interval = Options.ClaimInterval.Value or 10;
+                task.wait(interval);
             end;
         end);
     end;
@@ -280,8 +293,9 @@ OtherFunctions:AddToggle("AutoClaimWheelSpin", {
         getgenv().Functions.AutoClaimWheelSpin = Value;
         task.spawn(function()
             while Functions.AutoClaimWheelSpin do
-                task.wait();
                 RemoteEvent:FireServer("ClaimFreeWheelSpin");
+                local interval = Options.ClaimInterval.Value or 10;
+                task.wait(interval);
             end;
         end);
     end;
@@ -294,8 +308,9 @@ OtherFunctions:AddToggle("AutoClaimSeasonRewards", {
         getgenv().Functions.AutoClaimSeasonRewards = Value;
         task.spawn(function()
             while Functions.AutoClaimSeasonRewards do
-                task.wait();
                 RemoteEvent:FireServer("ClaimSeason");
+                local interval = Options.ClaimInterval.Value or 10;
+                task.wait(interval);
             end;
         end);
     end;
@@ -313,7 +328,8 @@ OtherFunctions:AddToggle("AutoClaimChests", {
                     RemoteEvent:FireServer("ClaimChest", v, true);
                     task.wait(1);
                 end;
-                task.wait(60);
+                local interval = Options.ClaimInterval.Value or 10;
+                task.wait(interval);
             end;
         end);
     end;
